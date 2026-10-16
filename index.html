@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Protótipo para estimar diferenças mensais de benefício e aplicar fatores de atualização informados pelo usuário.">
+  <title>Calculadora de Atrasados Previdenciários</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand-mark" aria-hidden="true">CP</div>
+    <div>
+      <p class="eyebrow">FERRAMENTA DE ESTIMATIVA</p>
+      <h1>Calculadora de atrasados</h1>
+    </div>
+    <span class="status-pill"><span class="status-dot"></span> Protótipo + API</span>
+  </header>
+
+  <main class="page-shell">
+    <section class="intro">
+      <div>
+        <p class="eyebrow">CÁLCULO PREVIDENCIÁRIO</p>
+        <h2>Apure diferenças mês a mês</h2>
+        <p class="intro-copy">Informe quanto era devido, quanto foi recebido e o fator acumulado de atualização de cada parcela. O sistema organiza os valores e mostra uma estimativa.</p>
+      </div>
+      <div class="intro-icon" aria-hidden="true">↗</div>
+    </section>
+
+    <section class="notice" role="note">
+      <span class="notice-icon" aria-hidden="true">i</span>
+      <div>
+        <strong>Importante: estimativa, não cálculo jurídico validado</strong>
+        <p>Esta versão não busca índices oficiais automaticamente, não calcula juros e não decide qual regra legal se aplica ao caso. Informe fatores conferidos para cada parcela. Não use o resultado isoladamente para cobrar ou ajuizar uma ação.</p>
+      </div>
+    </section>
+
+
+    <section id="fabrica-section" class="panel api-panel" aria-labelledby="fabrica-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">INTEGRAÇÃO EXTERNA</p>
+          <h2 id="fabrica-title">Calcular com a Fábrica de Cálculos (TRF3)</h2>
+          <p class="section-description">Envie um arquivo de cálculo <code>.calc</code> preparado pela calculadora previdenciária oficial. A API executa o cálculo de atrasados com os parâmetros presentes nesse arquivo.</p>
+        </div>
+        <span class="step-number">API</span>
+      </div>
+
+      <div id="api-health" class="api-status api-status-neutral" role="status" aria-live="polite">
+        Verificando a configuração da integração…
+      </div>
+
+      <p class="api-warning"><strong>Privacidade e credenciais:</strong> ao enviar o arquivo, seus dados serão transmitidos à API externa do TRF3. Só envie documentos que você tenha autorização para compartilhar. Solicite e utilize uma chave pessoal autorizada, de acordo com os termos da plataforma. Não compartilhe a chave nem publique esta aplicação com a sua chave para uso por terceiros sem autorização expressa.</p>
+
+      <form id="fabrica-api-form">
+        <label class="field api-file-field">
+          <span>Arquivo de cálculo (.calc, até 5 MB)</span>
+          <input id="calc-file" name="file" type="file" accept=".calc,application/json" required>
+        </label>
+        <p class="helper-text api-help">A integração não converte automaticamente os campos simples da calculadora abaixo em um cálculo judicial. Para usar esta API, primeiro prepare e exporte o arquivo no sistema compatível.</p>
+        <div class="form-actions api-actions">
+          <div class="button-group api-links">
+            <a class="button button-secondary" href="https://fabrica-de-calculos.app.trf3.jus.br/atrasados" target="_blank" rel="noopener noreferrer">Abrir calculadora TRF3 ↗</a>
+            <a class="button button-secondary" href="https://fabrica-de-calculos.app.trf3.jus.br/docs-tec/apis/prev-api.html" target="_blank" rel="noopener noreferrer">Documentação da API ↗</a>
+            <a class="button button-secondary" href="https://fabrica-de-calculos.app.trf3.jus.br/solicitar-api-key" target="_blank" rel="noopener noreferrer">Solicitar chave de API ↗</a>
+          </div>
+          <button id="api-submit" class="button button-primary" type="submit">Enviar arquivo e calcular</button>
+        </div>
+      </form>
+
+      <section id="api-result" class="api-result" hidden aria-labelledby="api-result-title">
+        <div class="api-result-heading">
+          <h3 id="api-result-title">Resposta da API</h3>
+          <button id="download-api-result" class="button button-small button-secondary" type="button">Baixar JSON</button>
+        </div>
+        <p id="api-result-message" class="api-result-message"></p>
+        <pre id="api-result-content" class="api-json"></pre>
+      </section>
+    </section>
+
+    <section class="panel" aria-labelledby="period-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">ETAPA 1</p>
+          <h2 id="period-title">Período e valores iniciais</h2>
+        </div>
+        <span class="step-number">01</span>
+      </div>
+      <form id="period-form">
+        <div class="form-grid form-grid-period">
+          <label class="field">
+            <span>Mês inicial</span>
+            <input id="start-month" type="month" value="2022-01" required>
+          </label>
+          <label class="field">
+            <span>Mês final</span>
+            <input id="end-month" type="month" value="2022-12" required>
+          </label>
+          <label class="field">
+            <span>Valor devido por mês (R$)</span>
+            <input id="default-due" type="number" min="0" step="0.01" value="5000.00" required>
+          </label>
+          <label class="field">
+            <span>Valor recebido por mês (R$)</span>
+            <input id="default-paid" type="number" min="0" step="0.01" value="4000.00" required>
+          </label>
+        </div>
+        <div class="form-actions">
+          <p class="helper-text">Os valores iniciais são usados para preencher os anos e meses gerados. Você poderá alterá-los depois.</p>
+          <button class="button button-primary" type="submit">Gerar período <span aria-hidden="true">→</span></button>
+        </div>
+        <p id="form-error" class="form-error" role="alert" hidden></p>
+      </form>
+    </section>
+
+    <section id="year-section" class="panel" aria-labelledby="year-title" hidden>
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">ETAPA 2</p>
+          <h2 id="year-title">Valores por ano</h2>
+          <p class="section-description">Cadastre o valor mensal devido e o recebido em cada ano, caso tenham mudado com os reajustes ou pagamentos.</p>
+        </div>
+        <span class="step-number">02</span>
+      </div>
+      <div class="table-wrap">
+        <table id="year-table">
+          <thead><tr><th scope="col">Ano</th><th scope="col">Devido por mês (R$)</th><th scope="col">Recebido por mês (R$)</th></tr></thead>
+          <tbody id="year-table-body"></tbody>
+        </table>
+      </div>
+      <div class="form-actions">
+        <p class="helper-text">Ao aplicar, os valores anuais serão copiados para todos os meses daquele ano.</p>
+        <button id="apply-years" class="button button-secondary" type="button">Aplicar valores aos meses</button>
+      </div>
+    </section>
+
+    <section id="month-section" class="panel" aria-labelledby="month-title" hidden>
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">ETAPA 3</p>
+          <h2 id="month-title">Parcelas e atualização</h2>
+          <p class="section-description">Confira os valores de cada competência. O fator é acumulado: por exemplo, 1,10 representa uma atualização total de 10% sobre a diferença daquela parcela.</p>
+        </div>
+        <span class="step-number">03</span>
+      </div>
+      <div class="table-toolbar">
+        <span id="month-count" class="result-count">0 parcelas</span>
+        <label class="factor-tool">
+          <span>Preencher fator de todas as parcelas</span>
+          <input id="bulk-factor" type="number" min="0" step="0.000001" value="1.000000" aria-label="Fator acumulado para todas as parcelas">
+          <button id="apply-factor" type="button" class="button button-small button-secondary">Aplicar</button>
+        </label>
+      </div>
+      <div class="table-wrap month-table-wrap">
+        <table id="month-table">
+          <thead>
+            <tr>
+              <th scope="col">Competência</th>
+              <th scope="col">Devido (R$)</th>
+              <th scope="col">Recebido (R$)</th>
+              <th scope="col">Diferença (R$)</th>
+              <th scope="col">Fator acumulado</th>
+              <th scope="col">Atualizado (R$)</th>
+            </tr>
+          </thead>
+          <tbody id="month-table-body"></tbody>
+        </table>
+      </div>
+      <div class="table-legend">
+        <span><i class="legend-dot legend-debt"></i>Diferença positiva</span>
+        <span><i class="legend-dot legend-paid"></i>Sem valor em atraso</span>
+      </div>
+      <div class="form-actions results-actions">
+        <p class="helper-text">Valores devidos e recebidos podem ser ajustados individualmente em cada mês.</p>
+        <div class="button-group">
+          <button id="export-csv" class="button button-secondary" type="button">Exportar CSV</button>
+          <button id="print-report" class="button button-primary" type="button">Imprimir relatório</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="summary-section" class="summary-section" aria-labelledby="summary-title" hidden>
+      <div class="summary-heading">
+        <div>
+          <p class="eyebrow">RESULTADO</p>
+          <h2 id="summary-title">Resumo da estimativa</h2>
+        </div>
+        <span class="summary-icon" aria-hidden="true">=</span>
+      </div>
+      <div class="summary-grid">
+        <article class="summary-card">
+          <p>Principal em atraso</p>
+          <strong id="total-principal">R$ 0,00</strong>
+          <span>Diferenças positivas antes da atualização</span>
+        </article>
+        <article class="summary-card">
+          <p>Atualização estimada</p>
+          <strong id="total-correction">R$ 0,00</strong>
+          <span>Diferença entre principal e valor atualizado</span>
+        </article>
+        <article class="summary-card summary-card-total">
+          <p>Total atualizado estimado</p>
+          <strong id="total-updated">R$ 0,00</strong>
+          <span>Não inclui juros ou outros encargos</span>
+        </article>
+        <article class="summary-card">
+          <p>Parcelas sem atraso</p>
+          <strong id="zero-difference-count">0</strong>
+          <span>Competências sem diferença positiva</span>
+        </article>
+      </div>
+      <p class="summary-footnote">O cálculo considera, por competência, a diferença positiva entre o valor devido e o recebido e multiplica essa diferença pelo fator informado. Pagamentos excedentes não são compensados automaticamente com outros meses.</p>
+    </section>
+
+    <footer class="page-footer">
+      <span>Calculadora de Atrasados Previdenciários</span>
+      <span>Dados processados localmente neste navegador</span>
+    </footer>
+  </main>
+</body>
+</html>

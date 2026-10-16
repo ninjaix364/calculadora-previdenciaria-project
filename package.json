@@ -1,0 +1,12 @@
+{
+  "name": "calculadora-atrasados-previdenciarios",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Protótipo de calculadora de atrasados com integração server-side opcional à API da Fábrica de Cálculos (TRF3).",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node server.js"
+  }
+}
